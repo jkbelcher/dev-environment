@@ -1,0 +1,170 @@
+# .tmux.conf
+#
+# Sources:
+#   Nicholas Marriott, public domain
+#   Andrew Look
+#   Justin Belcher
+
+
+# ─────────────────────────────────────
+#  Prefix Key
+# ─────────────────────────────────────
+
+set -g prefix C-Space
+unbind C-b
+bind C-Space send-prefix
+
+
+# ─────────────────────────────────────
+#  General Options
+# ─────────────────────────────────────
+
+set -g mouse on
+set -g bell-action none
+set -g remain-on-exit off
+set -g display-time 2000
+set -g history-limit 5000
+
+
+# ─────────────────────────────────────
+#  Terminal & Colour
+# ─────────────────────────────────────
+
+set -g default-terminal "tmux-256color"
+
+# Enable RGB colour if running in xterm(1)
+set -sa terminal-overrides ",xterm*:Tc"
+
+# Ghostty support
+set -g terminal-features "xterm-ghostty:title"
+set -g allow-passthrough on
+
+
+# ─────────────────────────────────────
+#  Window & Title Naming
+# ─────────────────────────────────────
+
+# Ghostty tab labels follow the tmux window name
+#   (in Ghostty, requires: shell-integration-features = no-title)
+set -g allow-rename on
+set -g automatic-rename off
+
+set -g set-titles on
+set -g set-titles-string '#I:#W'
+
+
+# ─────────────────────────────────────
+#  Copy Mode (vi-style)
+# ─────────────────────────────────────
+
+setw -g mode-keys vi
+bind -T copy-mode-vi 'v'                send-keys -X begin-selection
+bind -T copy-mode-vi 'y'                send-keys -X copy-pipe-and-cancel 'pbcopy'
+bind -T copy-mode-vi Enter              send-keys -X copy-pipe-and-cancel 'pbcopy'
+bind -T copy-mode-vi MouseDragEnd1Pane  send-keys -X copy-pipe-and-cancel 'pbcopy'
+bind p paste-buffer
+bind ] paste-buffer
+
+
+# ─────────────────────────────────────
+#  Key Bindings – Pane Splitting
+# ─────────────────────────────────────
+
+bind | split-window -h
+bind - split-window -v
+unbind %
+
+
+# ─────────────────────────────────────
+#  Key Bindings – Pane Navigation
+# ─────────────────────────────────────
+
+# With prefix + hjkl
+bind h select-pane -L
+bind l select-pane -R
+bind k select-pane -U
+bind j select-pane -D
+
+# Without prefix: Alt + hjkl
+bind -n M-h select-pane -L
+bind -n M-l select-pane -R
+bind -n M-k select-pane -U
+bind -n M-j select-pane -D
+
+# Without prefix: Alt + arrow keys
+bind -n M-Left  select-pane -L
+bind -n M-Right select-pane -R
+bind -n M-Up    select-pane -U
+bind -n M-Down  select-pane -D
+
+
+# ─────────────────────────────────────
+#  Key Bindings – Windows & Sessions
+# ─────────────────────────────────────
+
+# F-keys to select higher-numbered windows (10–21)
+bind F1  selectw -t:10
+bind F2  selectw -t:11
+bind F3  selectw -t:12
+bind F4  selectw -t:13
+bind F5  selectw -t:14
+bind F6  selectw -t:15
+bind F7  selectw -t:16
+bind F8  selectw -t:17
+bind F9  selectw -t:18
+bind F10 selectw -t:19
+bind F11 selectw -t:20
+bind F12 selectw -t:21
+
+# Switch sessions
+bind C-s choose-session
+
+
+# ─────────────────────────────────────
+#  Key Bindings – Utility
+# ─────────────────────────────────────
+
+bind r source-file ~/.tmux.conf \; display-message "Config reloaded!"
+bind m set monitor-activity
+bind y set synchronize-panes\; display 'synchronize-panes #{?synchronize-panes,on,off}'
+
+
+# ─────────────────────────────────────
+#  Appearance – Status Bar
+# ─────────────────────────────────────
+
+set -g status on
+set -g status-position bottom
+set -g status-justify left
+set -g status-interval 2
+set -g status-style bg=default,fg=colour12
+set -g status-right "%H:%M"
+set -g window-status-current-style "underscore"
+
+# If running nested inside tmux, turn the status bar red
+%if #{TMUX}
+set -g status-style bg=red
+%endif
+
+
+# ─────────────────────────────────────
+#  Appearance – Panes
+# ─────────────────────────────────────
+
+set -g pane-border-style fg=black
+set -g pane-active-border-style fg=brightred
+
+
+# ─────────────────────────────────────
+#  Appearance – Messages & Modes
+# ─────────────────────────────────────
+
+set -g message-style fg=black,bg=yellow
+setw -g mode-style bg=colour6,fg=colour0
+
+
+# ─────────────────────────────────────
+#  Workaround: this unbind breaks TextMate syntax highlighting,
+#  so it lives at the end of the file.
+# ─────────────────────────────────────
+unbind '"'
