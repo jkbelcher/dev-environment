@@ -1,0 +1,11 @@
+--- fdm_process_common.json.orig	2026-01-05 18:42:51
++++ fdm_process_common.json	2026-01-05 18:39:16
+@@ -114,7 +114,7 @@
+     "skin_infill_line_width": "0.45",
+     "skin_infill_depth": "2.0",
+     "skeleton_infill_line_width": "0.45",
+-    "sparse_infill_pattern": "grid",
++    "sparse_infill_pattern": "cubic",
+     "sparse_infill_speed": [
+         "50"
+     ],
