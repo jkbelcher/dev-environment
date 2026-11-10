@@ -15,15 +15,30 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 
 ## Setup
 
+Install [Homebrew](https://brew.sh) first, then:
+
 ```bash
 git clone <this-repo> ~/code/dev-env
 cd ~/code/dev-env
+./install.sh
+```
 
+`install.sh` runs the macOS, TextMate, Ghostty, and tmux scripts below, in that order. If one fails, the rest still run and the failures are listed at the end. It's safe to run again. It doesn't install the Bambu items; see [Bambu Studio](#bambu-studio) and [Fusion to Bambu](#fusion-to-bambu).
+
+### Running the scripts one at a time
+
+```bash
 # macOS settings (black desktop, Dock on the right with the Apple apps listed
 # at the top of the script removed, Finder options and sidebar Favorites,
 # trackpad). Leaves keyboard settings alone. Needs nothing installed first.
 # Log out and back in afterward for the trackpad settings.
 ./macos/setup.sh
+
+# TextMate (installs the app with Homebrew if it's missing, makes it the
+# default app for the text and code file types listed at the top of the
+# script, links the mate command, and sets EDITOR to `mate -w` in ~/.zshrc
+# unless your zsh config already sets an editor)
+./textmate/install.sh
 
 # Ghostty (installs the app with Homebrew if it's missing, then copies the
 # config; an existing, different config is kept as config.bak.<timestamp>)
@@ -32,14 +47,12 @@ cd ~/code/dev-env
 # tmux (installs tmux with Homebrew if it's missing, then copies the config;
 # an existing, different ~/.tmux.conf is kept as .tmux.conf.bak.<timestamp>)
 ./tmux/install.sh
+```
 
-# TextMate (installs the app with Homebrew if it's missing, makes it the
-# default app for the text and code file types listed at the top of the
-# script, links the mate command, and sets EDITOR to `mate -w` in ~/.zshrc
-# unless your zsh config already sets an editor)
-./textmate/install.sh
+### Bambu Studio
 
-# Bambu Studio (run again after Bambu Studio updates)
+```bash
+# Run again after Bambu Studio updates
 mkdir -p ~/.config/bambu-patches
 cp bambu-patches/* ~/.config/bambu-patches/
 ~/.config/bambu-patches/apply_default_infill.sh
