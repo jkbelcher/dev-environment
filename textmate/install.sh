@@ -4,8 +4,9 @@
 # ~/Applications) and makes it the default text editor:
 #
 #   - Text and code files (the extensions in file_types below) open in
-#     TextMate from Finder. This uses duti, which is installed with Homebrew
-#     if it's missing.
+#     TextMate from Finder. extension_defaults.js saves these settings (its
+#     header says why duti can't), then Launch Services is restarted to load
+#     them.
 #   - The `mate` command is linked into Homebrew's bin directory if it isn't
 #     installed already.
 #   - EDITOR and VISUAL are set to `mate -w` in ~/.zshrc, so git and other
@@ -19,6 +20,11 @@ set -euo pipefail
 # Extensions to open in TextMate. Each one sets the default app for its whole
 # file type, so .yml also covers .yaml, and .js also covers .mjs. .ts is also
 # MPEG-2 video to macOS, so those videos will open in TextMate too.
+#
+# Extensions macOS has no file type for (.fish and .go, for example) only
+# cover themselves. If an app you install later adds a file type for one of
+# them (Xcode does for .toml and .tsx), run this again to point that type at
+# TextMate.
 #
 # Left out on purpose, so they keep opening in their usual app: .md, .html,
 # .csv, .log, .plist, and Xcode's languages (.swift, .c, .h, .m). Add any of
@@ -34,6 +40,8 @@ file_types=(
 
 editor_cmd="mate -w"
 
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+
 # --- Homebrew ----------------------------------------------------------------
 
 # On a new machine Homebrew may be installed but not on PATH yet.
@@ -45,7 +53,7 @@ for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
 done
 
 if [[ -z "$brew_bin" ]]; then
-  echo "Homebrew is needed to install TextMate and duti. Install it from" >&2
+  echo "Homebrew is needed to install TextMate. Install it from" >&2
   echo "https://brew.sh, then run this again." >&2
   exit 1
 fi
@@ -95,34 +103,51 @@ fi
 
 # --- Default app for text files ----------------------------------------------
 
-duti_bin="$(command -v duti || true)"
-if [[ -z "$duti_bin" && -x "$brew_bin_dir/duti" ]]; then
-  duti_bin="$brew_bin_dir/duti"
-fi
-
-if [[ -z "$duti_bin" ]]; then
-  echo "Installing duti with Homebrew (it sets default apps)..."
-  "$brew_bin" install duti
-  duti_bin="$brew_bin_dir/duti"
-fi
-
 # Make sure Launch Services knows about the app before pointing files at it.
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 if [[ -x "$lsregister" ]]; then
   "$lsregister" -f "$app"
 fi
 
+extension_defaults=("osascript" "-l" "JavaScript" "$script_dir/extension_defaults.js")
+
+# Prints the extensions whose files don't open in TextMate, asking Launch
+# Services rather than trusting that saving worked. Prints all of them if it
+# can't tell.
+not_in_textmate() {
+  local out
+  if out="$("${extension_defaults[@]}" check "$bundle_id" "${file_types[@]}")"; then
+    printf '%s' "$out"
+  else
+    printf '%s\n' "${file_types[@]}"
+  fi
+}
+
+# If saving fails, the check lists what wasn't set.
+"${extension_defaults[@]}" set "$bundle_id" "${file_types[@]}" || true
+
+not_set="$(not_in_textmate)"
+if [[ -n "$not_set" ]]; then
+  # Launch Services reads the saved settings only when it starts. launchd
+  # starts it again as soon as an app needs it.
+  killall -u "$(id -un)" lsd || true
+  sleep 1
+  not_set="$(not_in_textmate)"
+fi
+
 failed=()
-for type in "${file_types[@]}"; do
-  if ! "$duti_bin" -s "$bundle_id" "$type" all; then
+while IFS= read -r type; do
+  if [[ -n "$type" ]]; then
     failed+=("$type")
   fi
-done
+done <<< "$not_set"
 
 if (( ${#failed[@]} == 0 )); then
   echo "TextMate now opens these file types: ${file_types[*]}"
 else
   echo "Couldn't make TextMate the default app for: ${failed[*]}" >&2
+  echo "Run this again. If they still don't change, set them in Finder: select" >&2
+  echo "a file, then File > Get Info > Open with > TextMate > Change All." >&2
 fi
 
 # --- EDITOR ------------------------------------------------------------------
