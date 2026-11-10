@@ -8,7 +8,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 | --- | --- | --- |
 | `macos/` | Script that applies macOS settings: black desktop, Dock on the right with some Apple apps removed, Finder options and sidebar Favorites, and trackpad settings | macOS settings (`defaults`, Finder sidebar, desktop picture) |
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
-| `tmux/` | tmux config, plus scripts that install tmux and the config, and back up `~/.tmux.conf` into this repo | `~/.tmux.conf` |
+| `tmux/` | tmux config, plus scripts that install tmux and the config, back up `~/.tmux.conf` into this repo, and bring sessions back in Ghostty tabs after a restart | `~/.tmux.conf`, `~/.tmux/plugins/`, `~/.local/bin/tmux-restore-sessions`, `~/Library/LaunchAgents/dev-env.tmux-restore-sessions.plist` |
 | `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
 | `bambu-default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
@@ -45,9 +45,29 @@ cd ~/code/dev-env
 ./ghostty/install.sh
 
 # tmux (installs tmux with Homebrew if it's missing, then copies the config;
-# an existing, different ~/.tmux.conf is kept as .tmux.conf.bak.<timestamp>)
+# an existing, different ~/.tmux.conf is kept as .tmux.conf.bak.<timestamp>.
+# Also installs the tmux plugins and the login agent described under
+# "Restoring tmux sessions after a restart")
 ./tmux/install.sh
 ```
+
+### Restoring tmux sessions after a restart
+
+`tmux/install.sh` sets this up; there's nothing to do by hand.
+
+- **Saving:** the [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) and [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum) plugins save every session's windows, panes, working directories, and on-screen text every 15 minutes. Press prefix + `S` to save right away, such as before a restart.
+- **Restoring:** at login, a LaunchAgent runs `tmux/restore-sessions.sh`, which restores the last save and opens one Ghostty window with a tab attached to each session. It needs Ghostty 1.3 or later. The first time, macOS asks for permission to control Ghostty.
+- **What doesn't come back:** programs that were running in the panes, apart from the few resurrect restarts by default (such as `vi`, `man`, and `less`). Anything done since the last save is lost too.
+
+The Ghostty config sets `window-save-state = never` so Ghostty doesn't also reopen its old tabs as empty shells.
+
+To open tabs for sessions that are already running (for example, ones you detached from):
+
+```bash
+tmux-restore-sessions NAME [NAME...]
+```
+
+That needs `~/.local/bin` on your `PATH`; otherwise run `./tmux/restore-sessions.sh` from the repo. Output from the login run goes to `~/Library/Logs/tmux-restore-sessions.log`.
 
 ### Bambu Studio
 

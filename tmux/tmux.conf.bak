@@ -164,6 +164,30 @@ setw -g mode-style bg=colour6,fg=colour0
 
 
 # ─────────────────────────────────────
+#  Plugins – Save & Restore Sessions
+# ─────────────────────────────────────
+
+# tmux/install.sh installs TPM and these plugins.
+#   resurrect saves and restores sessions, windows, panes, and directories
+#   continuum saves every 15 minutes
+# After a restart, tmux/restore-sessions.sh (run at login) restores the last
+# save and reopens a Ghostty tab for each session.
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+# Save with prefix + S, restore with prefix + R
+#   (the defaults, C-s and C-r, would take over C-s from choose-session)
+set -g @resurrect-save 'S'
+set -g @resurrect-restore 'R'
+
+# Bring back what was on screen in each pane too
+set -g @resurrect-capture-pane-contents 'on'
+
+if-shell 'test -x ~/.tmux/plugins/tpm/tpm' 'run-shell ~/.tmux/plugins/tpm/tpm'
+
+
+# ─────────────────────────────────────
 #  Workaround: this unbind breaks TextMate syntax highlighting,
 #  so it lives at the end of the file.
 # ─────────────────────────────────────

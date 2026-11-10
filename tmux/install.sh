@@ -3,6 +3,11 @@
 # Installs tmux with Homebrew (unless it's already on PATH), then copies
 # tmux.conf.bak next to this script to ~/.tmux.conf.
 #
+# Also installs TPM and the plugins the config lists (tmux-resurrect and
+# tmux-continuum), copies restore-sessions.sh to
+# ~/.local/bin/tmux-restore-sessions, and sets up a LaunchAgent that runs it
+# at login, so sessions come back in Ghostty tabs after a restart.
+#
 # If a different ~/.tmux.conf is already there, it's moved aside to
 # .tmux.conf.bak.<timestamp> first, so nothing is lost. Safe to run again.
 
@@ -70,10 +75,86 @@ for other in "${others[@]}"; do
   fi
 done
 
-echo
+# --- Plugins -----------------------------------------------------------------
+
+# The config uses TPM to load tmux-resurrect and tmux-continuum, which save
+# sessions so they can be restored after a restart.
+tpm_dir="$HOME/.tmux/plugins/tpm"
+
+if [[ -d "$tpm_dir" ]]; then
+  echo "TPM is already installed at $tpm_dir"
+else
+  echo "Installing TPM (the tmux plugin manager)..."
+  git clone --quiet --depth 1 https://github.com/tmux-plugins/tpm "$tpm_dir"
+fi
+
+# TPM's installer asks the tmux server where plugins go, so a server that's
+# already running needs the new config first. With no server, tmux reads the
+# config when the installer starts one.
+tmux_running=""
 if "$tmux_bin" list-sessions >/dev/null 2>&1; then
-  echo "Done. tmux is running; reload the config with prefix + r"
-  echo "(Ctrl+Space, then r) or: tmux source-file ~/.tmux.conf"
+  tmux_running=1
+  "$tmux_bin" source-file "$dest_config"
+fi
+
+echo "Installing tmux plugins..."
+PATH="$(dirname "$tmux_bin"):$PATH" "$tpm_dir/bin/install_plugins"
+
+# Load the plugins that were just installed.
+if [[ -n "$tmux_running" ]]; then
+  "$tmux_bin" source-file "$dest_config"
+fi
+
+# --- Restore at login --------------------------------------------------------
+
+# After a restart, restore-sessions.sh brings the saved sessions back and
+# opens a Ghostty tab for each. A LaunchAgent runs it at login. It's copied
+# out of the repo so the agent doesn't depend on where the repo lives.
+restore_source="$script_dir/restore-sessions.sh"
+restore_dest="$HOME/.local/bin/tmux-restore-sessions"
+agent_label="dev-env.tmux-restore-sessions"
+agent_plist="$HOME/Library/LaunchAgents/$agent_label.plist"
+agent_log="$HOME/Library/Logs/tmux-restore-sessions.log"
+
+mkdir -p "$(dirname "$restore_dest")" "$(dirname "$agent_plist")"
+install -m 755 "$restore_source" "$restore_dest"
+echo "Installed the restore script to $restore_dest"
+
+cat > "$agent_plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$agent_label</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$restore_dest</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>LimitLoadToSessionType</key>
+  <string>Aqua</string>
+  <key>StandardOutPath</key>
+  <string>$agent_log</string>
+  <key>StandardErrorPath</key>
+  <string>$agent_log</string>
+</dict>
+</plist>
+PLIST
+
+# Loading the agent runs the script once. That's harmless here: it does
+# nothing while tmux has sessions, or when nothing has been saved yet.
+launchctl bootout "gui/$(id -u)/$agent_label" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$agent_plist"
+echo "Installed the login agent to $agent_plist"
+
+echo
+if [[ -n "$tmux_running" ]]; then
+  echo "Done. tmux is running and has the new config."
 else
   echo "Done. Start tmux with: tmux"
 fi
+echo "Sessions are saved every 15 minutes (prefix + S saves now). After a"
+echo "restart they come back in Ghostty tabs at login; the first time, macOS"
+echo "asks for permission to control Ghostty."
