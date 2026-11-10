@@ -1,6 +1,6 @@
-# dev-env
+# Dev Environment
 
-Config files and setup scripts for getting a new macOS machine ready for development.
+Scripts for applying a preferred environment to a macOS machine.
 
 ## Contents
 
