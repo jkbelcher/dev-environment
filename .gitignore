@@ -10,3 +10,26 @@
 *.swp
 *.swo
 *~
+
+# Secrets and credentials (this repo is public)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keychain
+*.keychain-db
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.gpg
+*.asc
+*secret*
+*credentials*
+*.token
+.netrc
+.npmrc
+.pypirc
+*.local
