@@ -8,6 +8,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 | --- | --- | --- |
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus scripts that install tmux and the config, and back up `~/.tmux.conf` into this repo | `~/.tmux.conf` |
+| `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
 | `bambu-patches/` | Patch that sets Bambu Studio's default infill pattern to cubic | `~/.config/bambu-patches/` |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
 
@@ -24,6 +25,12 @@ cd ~/code/dev-env
 # tmux (installs tmux with Homebrew if it's missing, then copies the config;
 # an existing, different ~/.tmux.conf is kept as .tmux.conf.bak.<timestamp>)
 ./tmux/install.sh
+
+# TextMate (installs the app with Homebrew if it's missing, makes it the
+# default app for the text and code file types listed at the top of the
+# script, links the mate command, and sets EDITOR to `mate -w` in ~/.zshrc
+# unless your zsh config already sets an editor)
+./textmate/install.sh
 
 # Bambu Studio (run again after Bambu Studio updates)
 mkdir -p ~/.config/bambu-patches
