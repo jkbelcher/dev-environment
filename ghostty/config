@@ -50,6 +50,6 @@
 
 theme = light:iTerm2 Light Background,dark:Catppuccin Frappe
 
-# Prevent shell integration from overriding title, for tmux
+# Prevent shell integration from overriding title
 shell-integration-features = no-title
 
