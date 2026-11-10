@@ -1,6 +1,11 @@
 #!/bin/zsh
+#
+# Sets Bambu Studio's default sparse infill pattern to cubic by applying
+# default_infill.patch (next to this script) to Bambu's system process preset.
+# Bambu Studio replaces that file when it updates, so run this again after
+# each update.
 
-PATCH="$HOME/.config/bambu-patches/default_infill.patch"
+PATCH="${0:A:h}/default_infill.patch"
 TARGET="$HOME/Library/Application Support/BambuStudio/system/BBL/process/fdm_process_common.json"
 
 if [[ ! -f "$TARGET" ]]; then

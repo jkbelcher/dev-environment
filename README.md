@@ -10,7 +10,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus scripts that install tmux and the config, and back up `~/.tmux.conf` into this repo | `~/.tmux.conf` |
 | `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
-| `bambu-patches/` | Patch that sets Bambu Studio's default infill pattern to cubic | `~/.config/bambu-patches/` |
+| `bambu-default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
 
 ## Setup
@@ -53,9 +53,7 @@ cd ~/code/dev-env
 
 ```bash
 # Run again after Bambu Studio updates
-mkdir -p ~/.config/bambu-patches
-cp bambu-patches/* ~/.config/bambu-patches/
-~/.config/bambu-patches/apply_default_infill.sh
+./bambu-default-infill/apply_default_infill.sh
 ```
 
 ### Fusion to Bambu
