@@ -9,7 +9,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 | `macos/` | Script that applies macOS settings: black desktop, Dock on the right with some Apple apps removed, Finder options and sidebar Favorites, and trackpad settings | macOS settings (`defaults`, Finder sidebar, desktop picture) |
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus scripts that install tmux and the config, back up `~/.tmux.conf` into this repo, and bring sessions back in Ghostty tabs after a restart | `~/.tmux.conf`, `~/.tmux/plugins/`, `~/.local/bin/tmux-restore-sessions`, `~/Library/LaunchAgents/dev-env.tmux-restore-sessions.plist` |
-| `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
+| `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc`, Launch Services default apps |
 | `git/` | Git shortcuts for zsh (`gs` for `git status`, `gcb` for `git checkout -b`, and the rest in `git/aliases.zsh`), plus a script that installs them | `~/.config/zsh/git-aliases.zsh`, `~/.zshrc` |
 | `bambu-default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
@@ -38,7 +38,10 @@ cd ~/code/dev-env
 # TextMate (installs the app with Homebrew if it's missing, makes it the
 # default app for the text and code file types listed at the top of the
 # script, links the mate command, and sets EDITOR to `mate -w` in ~/.zshrc
-# unless your zsh config already sets an editor)
+# unless your zsh config already sets an editor). It restarts Launch Services
+# to load the new default apps. If you later install an app that adds its own
+# file type for one of the extensions (Xcode does for .toml and .tsx), run it
+# again.
 ./textmate/install.sh
 
 # Git shortcuts (copies git/aliases.zsh to ~/.config/zsh/git-aliases.zsh and
