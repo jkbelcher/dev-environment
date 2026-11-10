@@ -6,7 +6,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 
 | Directory | What it is | Goes to |
 | --- | --- | --- |
-| `ghostty/` | [Ghostty](https://ghostty.org) terminal config | `~/.config/ghostty/config` |
+| `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus a script that backs up `~/.tmux.conf` into this repo | `~/.tmux.conf` |
 | `bambu-patches/` | Patch that sets Bambu Studio's default infill pattern to cubic | `~/.config/bambu-patches/` |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
@@ -17,9 +17,9 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 git clone <this-repo> ~/code/dev-env
 cd ~/code/dev-env
 
-# Ghostty
-mkdir -p ~/.config/ghostty
-cp ghostty/config ~/.config/ghostty/config
+# Ghostty (installs the app with Homebrew if it's missing, then copies the
+# config; an existing, different config is kept as config.bak.<timestamp>)
+./ghostty/install.sh
 
 # tmux
 cp tmux/tmux.conf.bak ~/.tmux.conf
