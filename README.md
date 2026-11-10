@@ -6,6 +6,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 
 | Directory | What it is | Goes to |
 | --- | --- | --- |
+| `macos/` | Script that applies macOS settings: black desktop, Dock on the right with some Apple apps removed, Finder options and sidebar Favorites, and trackpad settings | macOS settings (`defaults`, Finder sidebar, desktop picture) |
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus scripts that install tmux and the config, and back up `~/.tmux.conf` into this repo | `~/.tmux.conf` |
 | `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
@@ -17,6 +18,12 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 ```bash
 git clone <this-repo> ~/code/dev-env
 cd ~/code/dev-env
+
+# macOS settings (black desktop, Dock on the right with the Apple apps listed
+# at the top of the script removed, Finder options and sidebar Favorites,
+# trackpad). Leaves keyboard settings alone. Needs nothing installed first.
+# Log out and back in afterward for the trackpad settings.
+./macos/setup.sh
 
 # Ghostty (installs the app with Homebrew if it's missing, then copies the
 # config; an existing, different config is kept as config.bak.<timestamp>)
