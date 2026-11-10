@@ -4,6 +4,7 @@
 #
 #   macos/setup.sh        macOS settings (desktop, Dock, Finder, trackpad)
 #   textmate/install.sh   TextMate as the default editor
+#   git/install.sh        git shortcuts (shell aliases)
 #   ghostty/install.sh    Ghostty and its config
 #   tmux/install.sh       tmux, its config and plugins, and session restore
 #
@@ -21,6 +22,7 @@ repo_dir="$(cd "$(dirname "$0")" && pwd)"
 steps=(
   macos/setup.sh
   textmate/install.sh
+  git/install.sh
   ghostty/install.sh
   tmux/install.sh
 )

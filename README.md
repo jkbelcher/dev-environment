@@ -10,6 +10,7 @@ Config files and setup scripts for getting a new macOS machine ready for develop
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
 | `tmux/` | tmux config, plus scripts that install tmux and the config, back up `~/.tmux.conf` into this repo, and bring sessions back in Ghostty tabs after a restart | `~/.tmux.conf`, `~/.tmux/plugins/`, `~/.local/bin/tmux-restore-sessions`, `~/Library/LaunchAgents/dev-env.tmux-restore-sessions.plist` |
 | `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` | `/Applications/TextMate.app`, `~/.zshrc` |
+| `git/` | Git shortcuts for zsh (`gs` for `git status`, `gcb` for `git checkout -b`, and the rest in `git/aliases.zsh`), plus a script that installs them | `~/.config/zsh/git-aliases.zsh`, `~/.zshrc` |
 | `bambu-default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
 
@@ -23,7 +24,7 @@ cd ~/code/dev-env
 ./install.sh
 ```
 
-`install.sh` runs the macOS, TextMate, Ghostty, and tmux scripts below, in that order. If one fails, the rest still run and the failures are listed at the end. It's safe to run again. It doesn't install the Bambu items; see [Bambu Studio](#bambu-studio) and [Fusion to Bambu](#fusion-to-bambu).
+`install.sh` runs the macOS, TextMate, git, Ghostty, and tmux scripts below, in that order. If one fails, the rest still run and the failures are listed at the end. It's safe to run again. It doesn't install the Bambu items; see [Bambu Studio](#bambu-studio) and [Fusion to Bambu](#fusion-to-bambu).
 
 ### Running the scripts one at a time
 
@@ -39,6 +40,12 @@ cd ~/code/dev-env
 # script, links the mate command, and sets EDITOR to `mate -w` in ~/.zshrc
 # unless your zsh config already sets an editor)
 ./textmate/install.sh
+
+# Git shortcuts (copies git/aliases.zsh to ~/.config/zsh/git-aliases.zsh and
+# loads it from ~/.zshrc; an existing, different copy is kept as
+# git-aliases.zsh.bak.<timestamp>). Needs nothing installed first. Also lists
+# any of the same aliases set elsewhere in your zsh config, to delete by hand.
+./git/install.sh
 
 # Ghostty (installs the app with Homebrew if it's missing, then copies the
 # config; an existing, different config is kept as config.bak.<timestamp>)
@@ -87,6 +94,12 @@ This builds `Fusion to Bambu.app` from `fusion-to-bambu/Fusion to Bambu.applescr
 Then, in Fusion: **File > 3D Print**, set **Application** to **Custom**, and choose **Browse Application > From my computer > Applications/Fusion to Bambu**.
 
 ## Updating
+
+To change the git shortcuts, edit `git/aliases.zsh`, then install the new copy:
+
+```bash
+./git/install.sh
+```
 
 After changing `~/.tmux.conf`, copy it back into the repo:
 
