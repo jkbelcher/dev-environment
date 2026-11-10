@@ -5,7 +5,7 @@
 #   macos/setup.sh        macOS settings (desktop, Dock, Finder, trackpad)
 #   textmate/install.sh   TextMate as the default editor
 #   ghostty/install.sh    Ghostty and its config
-#   tmux/install.sh       tmux and its config
+#   tmux/install.sh       tmux, its config and plugins, and session restore
 #
 # The Bambu items (bambu-default-infill/ and fusion-to-bambu/) are left out on
 # purpose; set those up by hand as the README describes.

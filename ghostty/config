@@ -53,3 +53,6 @@ theme = light:iTerm2 Light Background,dark:Catppuccin Frappe
 # Prevent shell integration from overriding title
 shell-integration-features = no-title
 
+# Don't reopen the previous windows and tabs at launch. After a restart,
+# tmux/restore-sessions.sh opens a tab for each tmux session instead.
+window-save-state = never
