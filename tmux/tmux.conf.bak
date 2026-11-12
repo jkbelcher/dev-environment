@@ -171,7 +171,7 @@ setw -g mode-style bg=colour6,fg=colour0
 #   resurrect saves and restores sessions, windows, panes, and directories
 #   continuum saves every 15 minutes
 # After a restart, tmux/restore-sessions.sh (run at login) restores the last
-# save and reopens a Ghostty tab for each session.
+# save and reopens a Ghostty tab for each session, in the window it was in.
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @plugin 'tmux-plugins/tmux-continuum'
@@ -183,6 +183,10 @@ set -g @resurrect-restore 'R'
 
 # Bring back what was on screen in each pane too
 set -g @resurrect-capture-pane-contents 'on'
+
+# After each save, record which Ghostty window and tab each session is in
+#   (in the background, so a save never waits on Ghostty)
+set -g @resurrect-hook-post-save-all '~/.local/bin/tmux-restore-sessions --save-windows &'
 
 if-shell 'test -x ~/.tmux/plugins/tpm/tpm' 'run-shell ~/.tmux/plugins/tpm/tpm'
 

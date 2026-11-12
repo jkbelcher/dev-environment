@@ -7,7 +7,9 @@
 # tmux-continuum), copies restore-sessions.sh to
 # ~/.local/bin/tmux-restore-sessions, sets up a LaunchAgent that runs it at
 # login, and adds a hook to ~/.zshrc that runs it when Ghostty starts, so
-# sessions come back in Ghostty tabs after the Mac or Ghostty is restarted.
+# sessions come back in their Ghostty windows and tabs after the Mac or
+# Ghostty is restarted. (The config has tmux-resurrect run the same script
+# after each save, to record which window each tab is in.)
 #
 # If a different ~/.tmux.conf is already there, it's moved aside to
 # .tmux.conf.bak.<timestamp> first, so nothing is lost. Safe to run again.
@@ -109,8 +111,9 @@ fi
 # --- Restore at login --------------------------------------------------------
 
 # After a restart, restore-sessions.sh brings the saved sessions back and
-# opens a Ghostty tab for each. A LaunchAgent runs it at login. It's copied
-# out of the repo so the agent doesn't depend on where the repo lives.
+# opens a Ghostty tab for each, in the window it was in. A LaunchAgent runs it
+# at login. It's copied out of the repo so the agent and the tmux config don't
+# depend on where the repo lives.
 restore_source="$script_dir/restore-sessions.sh"
 restore_dest="$HOME/.local/bin/tmux-restore-sessions"
 agent_label="dev-env.tmux-restore-sessions"
@@ -180,5 +183,5 @@ else
   echo "Done. Start tmux with: tmux"
 fi
 echo "Sessions are saved every 15 minutes (prefix + S saves now). They come"
-echo "back in Ghostty tabs at login and when Ghostty is restarted; the first"
-echo "time, macOS asks for permission to control Ghostty."
+echo "back in their Ghostty windows and tabs at login and when Ghostty is"
+echo "restarted; the first time, macOS asks for permission to control Ghostty."
