@@ -184,9 +184,21 @@ set -g @resurrect-restore 'R'
 # Bring back what was on screen in each pane too
 set -g @resurrect-capture-pane-contents 'on'
 
-# After each save, record which Ghostty window and tab each session is in
-#   (in the background, so a save never waits on Ghostty)
+# Record which Ghostty window and tab each session is in, for the next restore:
+# after each save, and whenever a tab is attached, changes session, gains or
+# loses focus, or is resized. Moving a tab to another window shows up here as
+# a focus change or a resize, so the record keeps up with it.
+#   (all in the background, so nothing waits on Ghostty)
+#   (focus-events is what makes Ghostty report focus changes; it also passes
+#    them on to programs in the panes that ask for them, such as vim)
 set -g @resurrect-hook-post-save-all '~/.local/bin/tmux-restore-sessions --save-windows &'
+set -g focus-events on
+%hidden SAVE_WINDOWS='run-shell -b "[ -x ~/.local/bin/tmux-restore-sessions ] && ~/.local/bin/tmux-restore-sessions --save-windows; true"'
+set-hook -g client-attached        "$SAVE_WINDOWS"
+set-hook -g client-session-changed "$SAVE_WINDOWS"
+set-hook -g client-focus-in        "$SAVE_WINDOWS"
+set-hook -g client-focus-out       "$SAVE_WINDOWS"
+set-hook -g client-resized         "$SAVE_WINDOWS"
 
 if-shell 'test -x ~/.tmux/plugins/tpm/tpm' 'run-shell ~/.tmux/plugins/tpm/tpm'
 

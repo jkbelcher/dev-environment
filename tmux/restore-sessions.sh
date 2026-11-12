@@ -32,11 +32,15 @@
 #                                     attached session is in, for the next
 #                                     run that opens tabs. Opens nothing.
 #                                     Needs Ghostty 1.4 or later. Without a
-#                                     terminal, output goes to the log.
+#                                     terminal, output goes to the log. The
+#                                     tmux config runs this after every save
+#                                     and whenever a tab is attached, focused,
+#                                     or resized.
 #
 # The record is ~/.local/state/tmux-restore-sessions/windows. Tabs come back
-# in the same windows, in the same order, with the same tab selected. Sessions
-# that had no tab share one more window. Window position and size aren't
+# in the same windows, in the same order, with the same tab selected. A
+# session whose tab or window was closed keeps the place it had, and sessions
+# that never had a tab share one more window. Window position and size aren't
 # restored, and a tab split into several terminals comes back as a tab for
 # each. Without a record, every session goes in one window.
 #
@@ -61,24 +65,50 @@ log_file="$HOME/Library/Logs/tmux-restore-sessions.log"
 # all see the same files.
 state_dir="$HOME/.local/state/tmux-restore-sessions"
 windows_file="$state_dir/windows"
+
+# Names the Ghostty process that tabs were last opened in, so the launch hook
+# can tell whether its own Ghostty already has them. Written just before the
+# tabs are opened.
 stamp="$state_dir/stamp"
 
-# Every run touches the stamp when it starts restoring and again before it
-# opens tabs. While the stamp is under two minutes old, tabs may still be on
-# their way or not attached yet.
-stamp_is_fresh() {
-  [[ -n "$(find "$stamp" -mmin -2 2>/dev/null)" ]]
-}
+# Exists while a run is restoring tmux and hasn't opened its tabs yet.
+restoring="$state_dir/restoring"
 
 now() {
   date '+%Y-%m-%d %H:%M:%S'
 }
 
+# Prints how many seconds ago a file was last written; a large number if it
+# doesn't exist.
+age_of() {
+  local modified
+  if modified="$(stat -f %m "$1" 2>/dev/null)"; then
+    echo $(( $(date +%s) - modified ))
+  else
+    echo 999999
+  fi
+}
+
+# Prints the running Ghostty's pid and start time. The start time is there so
+# a later Ghostty that gets the same pid doesn't look like this one.
+# (-a: pgrep leaves out its own ancestors otherwise, and Ghostty can be one.)
+ghostty_identity() {
+  local pid started
+  pid="$(pgrep -anx ghostty || true)"
+  [[ -n "$pid" ]] || return 1
+  started="$(ps -o lstart= -p "$pid" 2>/dev/null || true)"
+  [[ -n "$started" ]] || return 1
+  # Unquoted, to squeeze the spaces ps pads the date with.
+  # shellcheck disable=SC2086
+  echo "$pid" $started
+}
+
 # --- Save windows ------------------------------------------------------------
 
 # Prints a line for each terminal in Ghostty: window number (1 is the front
-# window), tab index, 1 if the tab is selected, and tty, separated by tabs.
-# Prints "old VERSION" instead if this Ghostty is too old to report ttys.
+# window), tab index, 1 if the tab is selected, window id, and tty, separated
+# by tabs. Prints "old VERSION" instead if this Ghostty is too old to report
+# ttys.
 list_ghostty_terminals() {
   osascript - <<'APPLESCRIPT'
 on run
@@ -97,6 +127,7 @@ on run
       set windowList to windows
       repeat with win in windowList
         set windowNumber to windowNumber + 1
+        set windowId to id of win
         set tabList to tabs of win
         repeat with t in tabList
           set isSelected to 0
@@ -108,7 +139,7 @@ on run
             try
               set device to (tty of term) as text
             end try
-            set out to out & windowNumber & sep & tabIndex & sep & isSelected & sep & device & linefeed
+            set out to out & windowNumber & sep & tabIndex & sep & isSelected & sep & windowId & sep & device & linefeed
           end repeat
         end repeat
       end repeat
@@ -122,60 +153,173 @@ APPLESCRIPT
 if [[ "${1:-}" == "--save-windows" ]]; then
   mkdir -p "$state_dir"
 
-  # tmux-resurrect runs this after every save, with no terminal: log only
-  # changes and errors there. From a terminal, say what happened.
+  # tmux runs this with no terminal, after every save and every time a tab is
+  # attached, focused, or resized: log only changes and errors there. From a
+  # terminal, say what happened.
   quiet=""
   if [[ ! -t 1 ]]; then
     quiet=1
     mkdir -p "$(dirname "$log_file")"
     exec >> "$log_file" 2>&1
   fi
-  not_saved() {
-    [[ -n "$quiet" ]] || echo "Windows not saved: $1"
-    exit 0
+  note() {
+    [[ -n "$quiet" ]] || echo "$1"
   }
 
-  # tmux knows the tty each attached client is on.
-  clients="$(tmux list-clients -F '#{client_tty} #{session_name}' 2>/dev/null || true)"
-  [[ -n "$clients" ]] || not_saved "no tmux session is attached."
-  pgrep -axq ghostty || not_saved "Ghostty isn't running."
-  if stamp_is_fresh; then
-    not_saved "tabs were opened in the last two minutes and may still be starting. Try again shortly."
-  fi
+  # Does one save. Leaves the record alone unless it has something to write.
+  new_file=""
+  save_windows_once() {
+    local delay clients identity terminals old_layout tab_count window_count
 
-  if ! terminals="$(list_ghostty_terminals 2>&1)"; then
-    echo "$(now) Couldn't read Ghostty's windows: $terminals"
-    exit 1
-  fi
-  if [[ "$terminals" == old\ * ]]; then
-    not_saved "that needs Ghostty 1.4 or later (this is ${terminals#old })."
-  fi
+    # Tabs that a restore has just opened take a moment to attach. Reading
+    # the windows before then would catch only some of them.
+    delay=$(( 10 - $(age_of "$stamp") ))
+    if (( delay > 0 )); then
+      note "Tabs were just opened; giving them $delay second(s) to attach."
+      sleep "$delay"
+    fi
 
-  # Match each terminal's tty to the tmux client on it. For the terminals
-  # that have one, keep the window number, the selected flag, and the session
-  # name, in window then tab order.
-  new_file="$(mktemp "$state_dir/windows.XXXXXX")"
-  trap 'rm -f "$new_file"' EXIT
-  awk -F '\t' '
-    NR == FNR {
-      space = index($0, " ")
-      session[substr($0, 1, space - 1)] = substr($0, space + 1)
-      next
-    }
-    ($4 in session) { print $1 FS $2 FS $3 FS session[$4] }
-  ' <(printf '%s\n' "$clients") <(printf '%s\n' "$terminals") \
-    | sort -s -t "$(printf '\t')" -k 1,1n -k 2,2n | cut -f 1,3,4 > "$new_file"
+    # tmux knows the tty each attached client is on.
+    clients="$(tmux list-clients -F '#{client_tty} #{session_name}' 2>/dev/null || true)"
+    if [[ -z "$clients" ]]; then
+      note "Windows not saved: no tmux session is attached."
+      return
+    fi
+    if ! identity="$(ghostty_identity)"; then
+      note "Windows not saved: Ghostty isn't running."
+      return
+    fi
 
-  if [[ ! -s "$new_file" ]]; then
-    not_saved "no Ghostty tab is attached to tmux."
-  fi
-  if cmp -s "$new_file" "$windows_file"; then
-    not_saved "nothing has changed since they were last saved."
-  fi
-  mv "$new_file" "$windows_file"
-  tab_count="$(wc -l < "$windows_file" | tr -d ' ')"
-  window_count="$(cut -f 1 "$windows_file" | sort -u | wc -l | tr -d ' ')"
-  echo "$(now) Saved $tab_count tab(s) in $window_count Ghostty window(s)"
+    if ! terminals="$(list_ghostty_terminals 2>&1)"; then
+      # Ghostty stops answering while it quits; that isn't worth a log line.
+      sleep 2
+      if [[ "$(ghostty_identity || true)" == "$identity" ]]; then
+        echo "$(now) Couldn't read Ghostty's windows: $terminals"
+      else
+        note "Windows not saved: Ghostty quit."
+      fi
+      return
+    fi
+    if [[ "$terminals" == old\ * ]]; then
+      note "Windows not saved: that needs Ghostty 1.4 or later (this is ${terminals#old })."
+      return
+    fi
+
+    # Match each terminal's tty to the tmux client on it, which gives the
+    # window and tab each attached session is in. A session that's still
+    # running but has no tab right now (its tab or window was closed, or
+    # Ghostty is on its way out) keeps the place the last record gave it:
+    # in the same window if that's still open, otherwise in a window of its
+    # own with the others that were there. It gets a tab again on the next
+    # restore either way.
+    #
+    # Each line written is: window number (1 is the front window), 1 if the
+    # tab is selected, Ghostty's id for the window, and the session name.
+    new_file="$(mktemp "$state_dir/windows.XXXXXX")"
+    awk -F '\t' '
+      kind == "sessions" { alive[$0] = 1; next }
+      kind == "clients" {
+        space = index($0, " ")
+        session_on[substr($0, 1, space - 1)] = substr($0, space + 1)
+        next
+      }
+      kind == "terminals" && NF >= 5 {
+        # window number, tab index, selected, window id, tty
+        if ($1 + 0 > open_windows) open_windows = $1 + 0
+        number_of[$4] = $1
+        if ($5 in session_on) {
+          print $1 FS $2 FS $3 FS $4 FS session_on[$5]
+          has_tab[session_on[$5]] = 1
+        }
+        next
+      }
+      kind == "record" && NF >= 4 {
+        # window number, selected, window id, session name
+        kept++
+        was_window[kept] = $1; was_selected[kept] = $2; was_id[kept] = $3; was_name[kept] = $4
+        next
+      }
+      END {
+        for (i = 1; i <= kept; i++) {
+          name = was_name[i]
+          if (!(name in alive) || (name in has_tab)) continue
+          if (was_id[i] in number_of) {
+            print number_of[was_id[i]] FS (100000 + i) FS 0 FS was_id[i] FS name
+          } else {
+            print (open_windows + was_window[i]) FS (100000 + i) FS was_selected[i] FS was_id[i] FS name
+          }
+        }
+      }
+    ' kind=sessions <(tmux list-sessions -F '#{session_name}' 2>/dev/null || true) \
+      kind=clients <(printf '%s\n' "$clients") \
+      kind=terminals <(printf '%s\n' "$terminals") \
+      kind=record <(cat "$windows_file" 2>/dev/null || true) \
+      | sort -s -t "$(printf '\t')" -k 1,1n -k 2,2n \
+      | awk -F '\t' -v OFS='\t' '$1 != last { last = $1; window++ } { print window, $3, $4, $5 }' > "$new_file"
+
+    if [[ ! -s "$new_file" ]]; then
+      rm -f "$new_file"
+      new_file=""
+      note "Windows not saved: no Ghostty tab is attached to tmux."
+      return
+    fi
+    if cmp -s "$new_file" "$windows_file"; then
+      rm -f "$new_file"
+      new_file=""
+      note "Windows not saved: nothing has changed since they were last saved."
+      return
+    fi
+
+    # Which window is in front and which tab is selected change all the time.
+    # Without a terminal, log only when a session has changed windows.
+    old_layout="$(cut -f 3,4 "$windows_file" 2>/dev/null | sort || true)"
+    mv "$new_file" "$windows_file"
+    new_file=""
+    if [[ -z "$quiet" || "$(cut -f 3,4 "$windows_file" | sort)" != "$old_layout" ]]; then
+      tab_count="$(wc -l < "$windows_file" | tr -d ' ')"
+      window_count="$(cut -f 1 "$windows_file" | sort -u | wc -l | tr -d ' ')"
+      echo "$(now) Saved $tab_count tab(s) in $window_count Ghostty window(s)"
+    fi
+  }
+
+  # tmux's events come in bursts, so runs can pile up. Each run leaves a
+  # request; whichever run holds the lock keeps saving until no request is
+  # left, and the others go. A lock a minute or more old was left by a run
+  # that was killed.
+  pending="$state_dir/pending"
+  saving="$state_dir/saving"
+  have_lock=""
+  finish() {
+    [[ -z "$new_file" ]] || rm -f "$new_file"
+    [[ -z "$have_lock" ]] || rmdir "$saving" 2>/dev/null || true
+  }
+  trap finish EXIT
+
+  : > "$pending"
+  # (find checks the age and removes the lock in one step. Checking first and
+  # removing after would let one run remove a lock another had just taken.)
+  find "$saving" -maxdepth 0 -mmin +1 -exec rmdir {} \; 2>/dev/null || true
+  passes=0
+  while :; do
+    if ! mkdir "$saving" 2>/dev/null; then
+      note "Another save is already running; it will pick this one up."
+      exit 0
+    fi
+    have_lock=1
+    while [[ -e "$pending" ]] && (( passes < 10 )); do
+      passes=$((passes + 1))
+      # Let a burst finish first, so it takes one save rather than several.
+      [[ -z "$quiet" ]] || sleep 0.3
+      rm -f "$pending"
+      save_windows_once
+    done
+    rmdir "$saving" 2>/dev/null || true
+    have_lock=""
+    # A request that arrived just as the lock was let go still needs a run.
+    if [[ ! -e "$pending" ]] || (( passes >= 10 )); then
+      break
+    fi
+  done
   exit 0
 fi
 
@@ -203,26 +347,38 @@ if [[ "${1:-}" == "--on-ghostty-launch" ]]; then
 
   # Only when Ghostty has just started. ps prints the age of a process under
   # a minute old as 00:SS.
-  # (-a: pgrep leaves out its own ancestors otherwise, and Ghostty is one.)
-  ghostty_pid="$(pgrep -anx ghostty || true)"
-  [[ -n "$ghostty_pid" ]] || exit 1
+  identity="$(ghostty_identity)" || exit 1
+  ghostty_pid="${identity%% *}"
   ghostty_age="$(ps -o etime= -p "$ghostty_pid" | tr -d ' ')"
   [[ "$ghostty_age" =~ ^00:[0-5][0-9]$ ]] || exit 1
 
-  # Act once per Ghostty launch, and not at all if another run is already
-  # bringing the tabs back. The tabs a run opens start shells that run this
-  # hook too, before their attach command has run, so without this each one
-  # would see detached sessions and open another set of tabs, without end.
-  # The same goes for the first tab the LaunchAgent opens at login. Two
-  # independent checks: the stamp, and a lock named for this Ghostty process.
+  # Act once per Ghostty launch, and not at all while another run is bringing
+  # the tabs back. The tabs a run opens start shells that run this hook too,
+  # before their attach command has run, so without this each one would see
+  # detached sessions and open another set of tabs, without end. The same
+  # goes for the first tab the LaunchAgent opens at login.
+  #
+  # Four checks, any of which is enough:
+  #   - another run is restoring tmux and hasn't opened its tabs yet
+  #   - tabs were already opened in this Ghostty process
+  #   - tabs were opened anywhere in the last five seconds, in case this
+  #     Ghostty process couldn't be told apart from the last one
+  #   - another shell in this Ghostty process got here first (the lock)
+  # None of them stops a Ghostty that was quit and reopened, however quickly.
   lock_dir="${TMPDIR:-/tmp}/tmux-restore-sessions"
   mkdir -p "$lock_dir" "$state_dir"
-  if stamp_is_fresh; then
+  if (( $(age_of "$restoring") < 120 )); then
+    exit 1
+  fi
+  if [[ "$(cat "$stamp" 2>/dev/null || true)" == "$identity" ]]; then
+    exit 1
+  fi
+  if (( $(age_of "$stamp") < 5 )); then
     exit 1
   fi
   find "$lock_dir" -mindepth 1 -maxdepth 1 -name 'ghostty.*' ! -name "ghostty.$ghostty_pid" -exec rmdir {} + 2>/dev/null || true
   mkdir "$lock_dir/ghostty.$ghostty_pid" 2>/dev/null || exit 1
-  touch "$stamp"
+  echo "$identity" > "$stamp"
 
   mkdir -p "$(dirname "$log_file")"
   exec >> "$log_file" 2>&1
@@ -280,10 +436,11 @@ else
     nothing_to_do "No saved tmux sessions to restore."
   fi
 
-  # From here the tabs are on their way. Say so now, so a Ghostty that starts
-  # during the restore leaves them to this run.
+  # From here the tabs are on their way. Say so until this run ends, so a
+  # Ghostty that starts during the restore leaves them to this run.
   mkdir -p "$state_dir"
-  touch "$stamp"
+  : > "$restoring"
+  trap 'rm -f "$restoring"' EXIT
 
   # Start the server with a placeholder session named 0, which resurrect
   # expects on a fresh server: it reuses it if the save has a session 0 and
@@ -312,7 +469,7 @@ tabs=()
 placed="$newline"
 last_window=0
 if [[ -f "$windows_file" ]]; then
-  while IFS=$'\t' read -r window selected name; do
+  while IFS=$'\t' read -r window selected _ name; do
     [[ "$window" =~ ^[0-9]+$ && -n "$name" ]] || continue
     [[ "$session_lines" == *"$newline$name$newline"* ]] || continue
     tabs+=("$window" "$selected" "$name")
@@ -365,8 +522,10 @@ if [[ -z "$ready" ]]; then
   exit 1
 fi
 
+# Say which Ghostty the tabs are going into, for the launch hook in the
+# shells they start.
 mkdir -p "$state_dir"
-touch "$stamp"
+ghostty_identity > "$stamp" || : > "$stamp"
 
 # Each tab starts the usual shell and types the attach command into it, so
 # detaching later leaves a normal shell behind.
