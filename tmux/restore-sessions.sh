@@ -5,7 +5,8 @@
 # tabs were in when they were last recorded.
 #
 # tmux/install.sh copies this to ~/.local/bin/tmux-restore-sessions, sets up a
-# LaunchAgent that runs it at login, and has tmux-resurrect run it with
+# LaunchAgent that runs it at login, and adds a hook to ~/.zshrc that runs it
+# when Ghostty starts. The tmux config has tmux-resurrect run it with
 # --save-windows after every save.
 #
 # Usage:
@@ -34,8 +35,9 @@
 #                                     Needs Ghostty 1.4 or later. Without a
 #                                     terminal, output goes to the log. The
 #                                     tmux config runs this after every save
-#                                     and whenever a tab is attached, focused,
-#                                     or resized.
+#                                     and whenever a tab is attached, changes
+#                                     session, gains or loses focus, or is
+#                                     resized.
 #
 # The record is ~/.local/state/tmux-restore-sessions/windows. Tabs come back
 # in the same windows, in the same order, with the same tab selected. A
@@ -154,8 +156,8 @@ if [[ "${1:-}" == "--save-windows" ]]; then
   mkdir -p "$state_dir"
 
   # tmux runs this with no terminal, after every save and every time a tab is
-  # attached, focused, or resized: log only changes and errors there. From a
-  # terminal, say what happened.
+  # attached, changes session, gains or loses focus, or is resized: log only
+  # changes and errors there. From a terminal, say what happened.
   quiet=""
   if [[ ! -t 1 ]]; then
     quiet=1
