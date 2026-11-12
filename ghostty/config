@@ -54,5 +54,5 @@ theme = light:iTerm2 Light Background,dark:Catppuccin Frappe
 shell-integration-features = no-title
 
 # Don't reopen the previous windows and tabs at launch. After a restart,
-# tmux/restore-sessions.sh opens a tab for each tmux session instead.
+# tmux/restore-sessions.sh reopens the ones that were attached to tmux instead.
 window-save-state = never
