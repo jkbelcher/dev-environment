@@ -3,12 +3,15 @@
 # Applies macOS settings to a new Mac:
 #
 #   - Desktop: plain black on every display.
-#   - Dock: on the right, without the Apple apps listed in dock_remove_apps
-#     and without the Downloads stack. Other Dock items are left alone.
-#   - Finder: file extensions shown, column view, new windows open to
-#     Home, and the sidebar Favorites listed in
-#     sidebar_favorites. Recents and AirDrop are taken out of the sidebar;
-#     folders you added yourself are kept, below the ones listed here.
+#   - Dock: on the right and always shown, with 47-pixel icons, magnification
+#     on at its smallest size, and windows minimizing into their app's icon.
+#     The Apple apps listed in dock_remove_apps and the Downloads stack are
+#     removed; other Dock items are left alone.
+#   - Finder: file extensions shown, column view, new windows open to Home,
+#     external disks and removable media shown on the desktop, and the
+#     sidebar Favorites listed in sidebar_favorites. Recents, AirDrop, and
+#     the Tags section are taken out of the sidebar; folders you added
+#     yourself are kept, below the ones listed here.
 #   - Trackpad: tap to click, natural scrolling off.
 #
 # Keyboard settings are left at the macOS defaults on purpose.

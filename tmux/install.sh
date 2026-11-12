@@ -147,8 +147,9 @@ cat > "$agent_plist" <<PLIST
 </plist>
 PLIST
 
-# Loading the agent runs the script once. That's harmless here: it does
-# nothing while tmux has sessions, or when nothing has been saved yet.
+# Loading the agent runs the script once. It does nothing while tmux has
+# sessions, or when nothing has been saved yet. If there is a save and tmux
+# has no sessions, it restores them and opens their Ghostty tabs.
 launchctl bootout "gui/$(id -u)/$agent_label" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$agent_plist"
 echo "Installed the login agent to $agent_plist"
