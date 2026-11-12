@@ -5,8 +5,9 @@
 #
 # Also installs TPM and the plugins the config lists (tmux-resurrect and
 # tmux-continuum), copies restore-sessions.sh to
-# ~/.local/bin/tmux-restore-sessions, and sets up a LaunchAgent that runs it
-# at login, so sessions come back in Ghostty tabs after a restart.
+# ~/.local/bin/tmux-restore-sessions, sets up a LaunchAgent that runs it at
+# login, and adds a hook to ~/.zshrc that runs it when Ghostty starts, so
+# sessions come back in Ghostty tabs after the Mac or Ghostty is restarted.
 #
 # If a different ~/.tmux.conf is already there, it's moved aside to
 # .tmux.conf.bak.<timestamp> first, so nothing is lost. Safe to run again.
@@ -149,12 +150,35 @@ launchctl bootout "gui/$(id -u)/$agent_label" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$agent_plist"
 echo "Installed the login agent to $agent_plist"
 
+# --- Restore when Ghostty starts ---------------------------------------------
+
+# Quitting Ghostty can take the tmux server down with it, and the login agent
+# doesn't run again until the next login. This hook covers that: the first
+# shell of a freshly started Ghostty restores the sessions if tmux has none,
+# then closes, leaving the restored tabs. The script decides whether to act;
+# see --on-ghostty-launch in restore-sessions.sh.
+zshrc="${ZDOTDIR:-$HOME}/.zshrc"
+hook_marker="--on-ghostty-launch"
+
+if grep -qF -- "$hook_marker" "$zshrc" 2>/dev/null; then
+  echo "The Ghostty launch hook is already in $zshrc"
+else
+  {
+    echo
+    echo "# Restore tmux sessions when Ghostty starts without them (added by dev-env/tmux/install.sh)"
+    echo "if [[ -o interactive && -n \"\$GHOSTTY_RESOURCES_DIR\" && -z \"\$TMUX\" && -x \"\$HOME/.local/bin/tmux-restore-sessions\" ]]; then"
+    echo "  \"\$HOME/.local/bin/tmux-restore-sessions\" --on-ghostty-launch && exit"
+    echo "fi"
+  } >> "$zshrc"
+  echo "Added the Ghostty launch hook to $zshrc"
+fi
+
 echo
 if [[ -n "$tmux_running" ]]; then
   echo "Done. tmux is running and has the new config."
 else
   echo "Done. Start tmux with: tmux"
 fi
-echo "Sessions are saved every 15 minutes (prefix + S saves now). After a"
-echo "restart they come back in Ghostty tabs at login; the first time, macOS"
-echo "asks for permission to control Ghostty."
+echo "Sessions are saved every 15 minutes (prefix + S saves now). They come"
+echo "back in Ghostty tabs at login and when Ghostty is restarted; the first"
+echo "time, macOS asks for permission to control Ghostty."
