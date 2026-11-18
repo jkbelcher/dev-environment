@@ -163,7 +163,7 @@ existing="$(grep -HnE '^[[:space:]]*(export[[:space:]]+)?(EDITOR|VISUAL)=' \
 if [[ -z "$existing" ]]; then
   {
     echo
-    echo "# Use TextMate as the command-line editor (added by dev-env/textmate/install.sh)"
+    echo "# Use TextMate as the command-line editor (added by dev-environment/textmate/install.sh)"
     echo "export EDITOR=\"$editor_cmd\""
     echo "export VISUAL=\"\$EDITOR\""
   } >> "$zshrc"

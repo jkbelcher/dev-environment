@@ -116,9 +116,19 @@ fi
 # depend on where the repo lives.
 restore_source="$script_dir/restore-sessions.sh"
 restore_dest="$HOME/.local/bin/tmux-restore-sessions"
-agent_label="dev-env.tmux-restore-sessions"
+agent_label="dev-environment.tmux-restore-sessions"
 agent_plist="$HOME/Library/LaunchAgents/$agent_label.plist"
 agent_log="$HOME/Library/Logs/tmux-restore-sessions.log"
+
+# Earlier versions installed the agent as dev-env.tmux-restore-sessions.
+# Remove it so the restore script doesn't run twice at login.
+old_agent_label="dev-env.tmux-restore-sessions"
+old_agent_plist="$HOME/Library/LaunchAgents/$old_agent_label.plist"
+if [[ -f "$old_agent_plist" ]]; then
+  launchctl bootout "gui/$(id -u)/$old_agent_label" 2>/dev/null || true
+  rm -f "$old_agent_plist"
+  echo "Removed the old login agent $old_agent_plist"
+fi
 
 mkdir -p "$(dirname "$restore_dest")" "$(dirname "$agent_plist")"
 install -m 755 "$restore_source" "$restore_dest"
@@ -169,7 +179,7 @@ if grep -qF -- "$hook_marker" "$zshrc" 2>/dev/null; then
 else
   {
     echo
-    echo "# Restore tmux sessions when Ghostty starts without them (added by dev-env/tmux/install.sh)"
+    echo "# Restore tmux sessions when Ghostty starts without them (added by dev-environment/tmux/install.sh)"
     echo "if [[ -o interactive && -n \"\$GHOSTTY_RESOURCES_DIR\" && -z \"\$TMUX\" && -x \"\$HOME/.local/bin/tmux-restore-sessions\" ]]; then"
     echo "  \"\$HOME/.local/bin/tmux-restore-sessions\" --on-ghostty-launch && exit"
     echo "fi"

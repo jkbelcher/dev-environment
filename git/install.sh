@@ -53,7 +53,7 @@ if grep -qF "$(basename "$dest_file")" "${zsh_files[@]}" 2>/dev/null; then
 else
   {
     echo
-    echo "# Git shortcuts (added by dev-env/git/install.sh)"
+    echo "# Git shortcuts (added by dev-environment/git/install.sh)"
     echo "$load_line"
   } >> "$zshrc"
   changed=true

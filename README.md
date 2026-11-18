@@ -8,7 +8,7 @@ Scripts for applying a preferred environment to a macOS machine.
 | --- | --- | --- |
 | `macos/` | Script that applies macOS settings: black desktop, Dock on the right with some Apple apps and the Downloads stack removed, Finder options and sidebar Favorites, and trackpad settings | macOS settings (`defaults`, Finder sidebar, desktop picture) |
 | `ghostty/` | [Ghostty](https://ghostty.org) terminal config, plus a script that installs Ghostty and the config | `~/.config/ghostty/config` |
-| `tmux/` | tmux config, plus scripts that install tmux and the config, back up `~/.tmux.conf` into this repo, and bring sessions back in their Ghostty windows and tabs after the Mac or Ghostty restarts | `~/.tmux.conf`, `~/.tmux/plugins/`, `~/.local/bin/tmux-restore-sessions`, `~/Library/LaunchAgents/dev-env.tmux-restore-sessions.plist`, a hook in `~/.zshrc`, `~/.local/state/tmux-restore-sessions/` and `~/Library/Logs/tmux-restore-sessions.log` (written as you work) |
+| `tmux/` | tmux config, plus scripts that install tmux and the config, back up `~/.tmux.conf` into this repo, and bring sessions back in their Ghostty windows and tabs after the Mac or Ghostty restarts | `~/.tmux.conf`, `~/.tmux/plugins/`, `~/.local/bin/tmux-restore-sessions`, `~/Library/LaunchAgents/dev-environment.tmux-restore-sessions.plist`, a hook in `~/.zshrc`, `~/.local/state/tmux-restore-sessions/` and `~/Library/Logs/tmux-restore-sessions.log` (written as you work) |
 | `textmate/` | Script that installs [TextMate](https://macromates.com) and makes it the default editor for text and code files and for `EDITOR` and `VISUAL` | `/Applications/TextMate.app`, the `mate` command in Homebrew's `bin`, `~/.zshrc`, Launch Services default apps |
 | `git/` | Git shortcuts for zsh (`gs` for `git status`, `gcb` for `git checkout -b`, and the rest in `git/aliases.zsh`), plus a script that installs them | `~/.config/zsh/git-aliases.zsh`, `~/.zshrc` |
 | `bambu/default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
@@ -19,8 +19,8 @@ Scripts for applying a preferred environment to a macOS machine.
 Install [Homebrew](https://brew.sh) first, then:
 
 ```bash
-git clone <this-repo> ~/code/dev-env
-cd ~/code/dev-env
+git clone <this-repo> ~/code/dev-environment
+cd ~/code/dev-environment
 ./install.sh
 ```
 
