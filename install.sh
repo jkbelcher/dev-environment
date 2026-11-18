@@ -8,8 +8,8 @@
 #   ghostty/install.sh    Ghostty and its config
 #   tmux/install.sh       tmux, its config and plugins, and session restore
 #
-# The Bambu items (bambu-default-infill/ and fusion-to-bambu/) are left out on
-# purpose; set those up by hand as the README describes.
+# The Bambu items (bambu/default-infill/ and bambu/fusion-to-bambu/) are left
+# out on purpose; set those up by hand as the README describes.
 #
 # Homebrew has to be installed first (https://brew.sh), since the TextMate,
 # Ghostty, and tmux scripts install with it. If one script fails, the rest
