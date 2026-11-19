@@ -37,4 +37,14 @@ repeat_boost = 135
 [models."MX Master 3S"]
 kind = "mouse"
 
-[models."MX Master 3S".settings]
+[models."MX Master 3S".settings.per_app_bindings."com.apple.Safari".Back]
+CustomShortcut = "Cmd+["
+
+[models."MX Master 3S".settings.per_app_bindings."com.apple.Safari".Forward]
+CustomShortcut = "Cmd+]"
+
+[models."MX Master 3S".settings.per_app_bindings."com.apple.finder".Back]
+CustomShortcut = "Cmd+["
+
+[models."MX Master 3S".settings.per_app_bindings."com.apple.finder".Forward]
+CustomShortcut = "Cmd+]"
