@@ -23,8 +23,12 @@ if [[ ! -f "$PATCH" ]]; then
 fi
 
 echo "Applying BambuStudio patch..."
-patch "$TARGET" "$PATCH"
+if ! patch "$TARGET" "$PATCH"; then
+  echo
+  echo "Patch failed."
+  read -k 1 "?Press any key to close..."
+  exit 1
+fi
 
 echo
 echo "Done."
-read -k 1 "?Press any key to close..."
