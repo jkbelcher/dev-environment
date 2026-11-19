@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+#
+# Git pre-commit hook. Blocks a commit that would publish a secret or personal
+# info, or that adds a shell script with shellcheck findings:
+#
+#   - gitleaks scans the staged changes using .gitleaks.toml at the repo root:
+#     gitleaks's built-in secret rules plus this repo's rules for home
+#     directory paths and email addresses.
+#   - shellcheck checks each staged file whose shebang is sh, bash, dash, or
+#     ksh. zsh scripts are skipped, since shellcheck can't read zsh. It reads
+#     the copy on disk, so stage your latest edits before committing.
+#
+# This repo is public, so the hook fails closed: if gitleaks or shellcheck
+# isn't installed, the commit is blocked until it is.
+#
+# Git runs this because the repo's local config points core.hooksPath at
+# hooks/. Turn it on once per clone:
+#
+#   git config core.hooksPath hooks
+#
+# If gitleaks flags something that's fine to publish, end that line with a
+# "gitleaks:allow" comment rather than skipping the hook with --no-verify.
+# .github/workflows/checks.yml runs the same checks on every push.
+
+set -euo pipefail
+
+repo_dir="$(git rev-parse --show-toplevel)"
+cd "$repo_dir"
+
+# Git GUIs (and IDEs) may run hooks without Homebrew on PATH.
+for dir in /opt/homebrew/bin /usr/local/bin; do
+  if [[ -d "$dir" && ":$PATH:" != *":$dir:"* ]]; then
+    PATH="$PATH:$dir"
+  fi
+done
+
+missing=()
+for tool in gitleaks shellcheck; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    missing+=("$tool")
+  fi
+done
+
+if (( ${#missing[@]} > 0 )); then
+  echo "pre-commit: ${missing[*]} not found. Install with: brew install ${missing[*]}" >&2
+  echo "This repo is public, so commits are blocked until the checks can run." >&2
+  exit 1
+fi
+
+# --- Secrets and personal info -----------------------------------------------
+
+if ! gitleaks git --pre-commit --staged --redact --no-banner --verbose \
+  --log-level warn --config "$repo_dir/.gitleaks.toml" "$repo_dir"; then
+  echo >&2
+  echo "pre-commit: gitleaks found something that shouldn't be published (above)." >&2
+  echo "Take it out of the staged changes. If it's fine to publish, end that line" >&2
+  echo "with a gitleaks:allow comment." >&2
+  exit 1
+fi
+
+# --- Shell scripts -----------------------------------------------------------
+
+# Same pattern as the shellcheck job in .github/workflows/checks.yml.
+shebang_re='^#!.*/(env[[:space:]]+)?(ba|da|k)?sh([[:space:]]|$)'
+scripts=()
+
+while IFS= read -r -d '' file; do
+  first_line=""
+  IFS= read -r first_line < "$file" || true
+  if [[ "$first_line" =~ $shebang_re ]]; then
+    scripts+=("$file")
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if (( ${#scripts[@]} > 0 )); then
+  if ! shellcheck "${scripts[@]}"; then
+    echo >&2
+    echo "pre-commit: fix the shellcheck findings above, or turn one off with a" >&2
+    echo "'# shellcheck disable=SCxxxx' comment that says why." >&2
+    exit 1
+  fi
+fi

@@ -1,0 +1,39 @@
+# gitleaks config for this repo, used by hooks/pre-commit (staged changes) and
+# .github/workflows/checks.yml (full history).
+#
+# It keeps gitleaks's built-in secret rules and adds two rules for personal
+# info that CLAUDE.md says never to commit: home directory paths and email
+# addresses. To publish a line one of these flags by mistake, end it with a
+# "gitleaks:allow" comment, or add a narrow allowlist entry below.
+
+title = "dev-environment"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "home-path"
+description = "Hardcoded macOS home directory path; use ~ or $HOME instead"
+regex = '''/Users/[A-Za-z0-9._-]+/'''
+keywords = ["/users/"]
+
+[[rules.allowlists]]
+description = "Shared is a system folder, not a user's home"
+regexTarget = "match"
+regexes = ['''^/Users/Shared/$''']
+
+[[rules]]
+id = "email-address"
+description = "Email address (personal info)"
+regex = '''[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}'''
+keywords = ["@"]
+
+[[rules.allowlists]]
+description = "Placeholder, no-reply, and git-over-SSH addresses"
+regexTarget = "match"
+regexes = [
+  '''@example\.(?:com|org|net)$''',
+  '''@users\.noreply\.github\.com$''',
+  '''^noreply@anthropic\.com$''',
+  '''^git@''',
+]

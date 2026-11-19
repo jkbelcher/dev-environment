@@ -12,6 +12,7 @@ Treat everything committed here as published to the world, history included.
 - **Check configs copied from the machine.** App configs (and backups like `tmux/backup_tmux.sh`) can pick up tokens, account emails, or recent-file paths. Read the diff before committing.
 - **Secrets stay outside the repo.** If a config needs one, load it at runtime from an untracked file (e.g. `~/.config/<tool>/secrets`) or the macOS Keychain, and note that in the README.
 - **Review before every commit:** run `git diff --cached` and look for any of the above.
+- **Let the checks run.** `hooks/pre-commit` (enabled with `git config core.hooksPath hooks`) runs gitleaks with `.gitleaks.toml` and shellcheck on staged changes, and `.github/workflows/checks.yml` runs them again on every push, with gitleaks over the full history. They catch secrets, full home paths, and email addresses, but not everything above, so still read the diff. Never commit with `--no-verify`. If a finding is a false positive, use a `gitleaks:allow` or `# shellcheck disable=SCxxxx` comment that says why.
 - **If something sensitive is already committed, stop and tell the user.** A new commit doesn't remove it; it needs a history rewrite, and the secret needs rotating.
 
 ## Conventions

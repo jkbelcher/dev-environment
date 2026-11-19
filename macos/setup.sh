@@ -131,6 +131,8 @@ i=0
 while pb -c "Print :persistent-others:$i" "$dock_plist" >/dev/null 2>&1; do
   folder="$(dock_tile_path "$dock_plist" "persistent-others:$i")"
   relative="$(pb -c "Print :persistent-others:$i:tile-data:home\ directory\ relative" "$dock_plist" 2>/dev/null || true)"
+  # The Dock stores this value as the literal text "~/Downloads".
+  # shellcheck disable=SC2088
   if [[ "$folder" == "$HOME/Downloads" || "$relative" == "~/Downloads" ]]; then
     pb -c "Delete :persistent-others:$i" "$dock_plist"
     removed="$removed, Downloads stack"

@@ -291,6 +291,7 @@ if [[ "${1:-}" == "--save-windows" ]]; then
   pending="$state_dir/pending"
   saving="$state_dir/saving"
   have_lock=""
+  # shellcheck disable=SC2329  # called by the trap below
   finish() {
     [[ -z "$new_file" ]] || rm -f "$new_file"
     [[ -z "$have_lock" ]] || rmdir "$saving" 2>/dev/null || true

@@ -1,0 +1,81 @@
+# Runs the same checks as hooks/pre-commit on every push and pull request, to
+# catch commits made without the hook (a fresh clone, or --no-verify):
+#
+#   - gitleaks over the full history, with .gitleaks.toml (secrets, home
+#     directory paths, and email addresses).
+#   - shellcheck over every tracked sh/bash script.
+#
+# Hardening: the token can only read the repo, checkout doesn't keep it, and
+# actions are pinned to a commit SHA (.github/dependabot.yml proposes
+# updates). The gitleaks and shellcheck downloads are pinned by version and
+# SHA-256 below; Dependabot can't update those, so bump them by hand from
+# each tool's release page.
+
+name: Checks
+
+on: [push, pull_request]
+
+permissions: {}
+
+jobs:
+  secrets:
+    name: Secrets and personal info
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      # linux_x64 line of gitleaks_<version>_checksums.txt on the release page
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0  # full history, so old commits are scanned too
+          persist-credentials: false
+      - name: Install gitleaks
+        run: |
+          cd "$RUNNER_TEMP"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
+          echo "${GITLEAKS_SHA256}  ${tarball}" | sha256sum --check --strict
+          tar -xzf "$tarball" gitleaks
+      - name: Scan the full history
+        run: |
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --verbose \
+            --config .gitleaks.toml .
+
+  shellcheck:
+    name: Shell scripts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SHELLCHECK_VERSION: 0.11.0
+      # digest of shellcheck-v<version>.linux.x86_64.tar.xz on the release page
+      SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install shellcheck
+        run: |
+          cd "$RUNNER_TEMP"
+          tarball="shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          curl -sSfLO "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/${tarball}"
+          echo "${SHELLCHECK_SHA256}  ${tarball}" | sha256sum --check --strict
+          tar -xJf "$tarball" --strip-components=1 "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
+      - name: Run shellcheck
+        run: |
+          # Same rule as hooks/pre-commit: files whose shebang is sh, bash,
+          # dash, or ksh. shellcheck can't read zsh, so zsh scripts are skipped.
+          shebang_re='^#!.*/(env[[:space:]]+)?(ba|da|k)?sh([[:space:]]|$)'
+          scripts=()
+          while IFS= read -r -d '' file; do
+            first_line=""
+            IFS= read -r first_line < "$file" || true
+            if [[ "$first_line" =~ $shebang_re ]]; then
+              scripts+=("$file")
+            fi
+          done < <(git ls-files -z)
+          printf 'Checking %s\n' "${scripts[@]}"
+          "$RUNNER_TEMP/shellcheck" "${scripts[@]}"

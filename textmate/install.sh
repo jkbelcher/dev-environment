@@ -173,6 +173,7 @@ elif grep -qE 'EDITOR=.*mate' <<< "$existing"; then
   echo "EDITOR is already set to TextMate in your zsh config"
 else
   echo "Your zsh config already sets an editor, so it was left alone:"
+  # shellcheck disable=SC2001  # indents every line, which ${var//} can't do
   sed 's/^/  /' <<< "$existing"
   echo "To use TextMate instead, change it to: export EDITOR=\"$editor_cmd\""
 fi

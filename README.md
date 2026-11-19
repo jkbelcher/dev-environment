@@ -122,3 +122,24 @@ After changing `tmux/restore-sessions.sh`, install the new copy. tmux, the login
 ```bash
 ./tmux/install.sh
 ```
+
+## Working on this repo
+
+This repo is public, so a commit hook checks each commit before it's made. Set it up once per clone:
+
+```bash
+brew install gitleaks shellcheck
+```
+
+```bash
+git config core.hooksPath hooks
+```
+
+`hooks/pre-commit` then blocks a commit when:
+
+- [gitleaks](https://github.com/gitleaks/gitleaks) finds a secret (API key, token, private key, and so on), a home directory path written out in full, or an email address in the staged changes. The rules are in `.gitleaks.toml`.
+- [shellcheck](https://www.shellcheck.net) finds a problem in a staged sh or bash script. zsh scripts are skipped, since shellcheck can't read them.
+
+If gitleaks flags something that's fine to publish, end that line with a `gitleaks:allow` comment. For a shellcheck finding that's intended, add a `# shellcheck disable=SCxxxx` comment that says why. Don't skip the hook with `--no-verify`.
+
+`.github/workflows/checks.yml` runs the same checks on GitHub for every push and pull request, with gitleaks scanning the full history. `.github/dependabot.yml` proposes updates to the GitHub Actions the workflow uses.

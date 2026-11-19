@@ -68,6 +68,7 @@ dupes="$(grep -HnE "^[[:space:]]*alias[[:space:]]+($names)=" "${zsh_files[@]}" 2
 if [[ -n "$dupes" ]]; then
   echo
   echo "Your zsh config also defines some of these aliases:"
+  # shellcheck disable=SC2001  # indents every line, which ${var//} can't do
   sed 's/^/  /' <<< "$dupes"
   echo "Delete those lines so the shortcuts come only from $dest_file."
   echo "Until then, whichever definition zsh loads last wins."
