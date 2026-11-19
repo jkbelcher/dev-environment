@@ -34,6 +34,21 @@ max_glide_speed = 8000
 pixels_per_notch = 28
 repeat_boost = 135
 
+[models."MX Anywhere 3S"]
+kind = "mouse"
+
+[models."MX Anywhere 3S".settings.per_app_bindings."com.apple.Safari".Back]
+CustomShortcut = "Cmd+["
+
+[models."MX Anywhere 3S".settings.per_app_bindings."com.apple.Safari".Forward]
+CustomShortcut = "Cmd+]"
+
+[models."MX Anywhere 3S".settings.per_app_bindings."com.apple.finder".Back]
+CustomShortcut = "Cmd+["
+
+[models."MX Anywhere 3S".settings.per_app_bindings."com.apple.finder".Forward]
+CustomShortcut = "Cmd+]"
+
 [models."MX Master 3S"]
 kind = "mouse"
 
