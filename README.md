@@ -13,6 +13,7 @@ Scripts for applying a preferred environment to a macOS machine.
 | `git/` | Git shortcuts for zsh (`gs` for `git status`, `gcb` for `git checkout -b`, and the rest in `git/aliases.zsh`), plus a script that installs them | `~/.config/zsh/git-aliases.zsh`, `~/.zshrc` |
 | `bambu/default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `bambu/fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
+| `logitech/` | Script that installs [OpenLogi](https://openlogi.org), a local-first alternative to Logitech Options+ | `/Applications/OpenLogi.app` |
 
 ## Setup
 
@@ -24,7 +25,7 @@ cd ~/code/dev-environment
 ./install.sh
 ```
 
-`install.sh` runs the macOS, TextMate, git, Ghostty, and tmux scripts below, in that order. If one fails, the rest still run and the failures are listed at the end. It's safe to run again. It doesn't install the Bambu items; see [Bambu Studio](#bambu-studio) and [Fusion to Bambu](#fusion-to-bambu).
+`install.sh` runs the macOS, TextMate, git, Ghostty, and tmux scripts below, in that order. If one fails, the rest still run and the failures are listed at the end. It's safe to run again. It doesn't install the Bambu items or OpenLogi; see [Bambu Studio](#bambu-studio), [Fusion to Bambu](#fusion-to-bambu), and [OpenLogi](#openlogi).
 
 ### Running the scripts one at a time
 
@@ -96,6 +97,14 @@ That needs `~/.local/bin` on your `PATH`; otherwise run `./tmux/restore-sessions
 This builds `Fusion to Bambu.app` from `bambu/fusion-to-bambu/Fusion to Bambu.applescript` and puts it in `/Applications`. It does what saving the script as an Application in Script Editor would do. Run it again after you edit the script.
 
 Then, in Fusion: **File > 3D Print**, set **Application** to **Custom**, and choose **Browse Application > From my computer > Applications/Fusion to Bambu**.
+
+### OpenLogi
+
+```bash
+./logitech/install.sh
+```
+
+This installs [OpenLogi](https://openlogi.org) with Homebrew, unless it's already in `/Applications` or `~/Applications`.
 
 ## Updating
 
