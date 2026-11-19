@@ -13,7 +13,7 @@ Scripts for applying a preferred environment to a macOS machine.
 | `git/` | Git shortcuts for zsh (`gs` for `git status`, `gcb` for `git checkout -b`, and the rest in `git/aliases.zsh`), plus a script that installs them | `~/.config/zsh/git-aliases.zsh`, `~/.zshrc` |
 | `bambu/default-infill/` | Patch that sets Bambu Studio's default infill pattern to cubic, plus a script that applies it | Bambu Studio's `fdm_process_common.json` (run from the repo; nothing is copied) |
 | `bambu/fusion-to-bambu/` | AppleScript droplet that Fusion's 3D Print command uses to send models to Bambu Studio | `/Applications/Fusion to Bambu.app` |
-| `logitech/` | Script that installs [OpenLogi](https://openlogi.org), a local-first alternative to Logitech Options+ | `/Applications/OpenLogi.app` |
+| `logitech/` | Script that installs [OpenLogi](https://openlogi.org), a local-first alternative to Logitech Options+, plus its saved settings and scripts that back them up and restore them | `/Applications/OpenLogi.app`, `~/.config/openlogi/config.toml` |
 
 ## Setup
 
@@ -106,6 +106,22 @@ Then, in Fusion: **File > 3D Print**, set **Application** to **Custom**, and cho
 
 This installs [OpenLogi](https://openlogi.org) with Homebrew, unless it's already in `/Applications` or `~/Applications`.
 
+To bring over the settings saved in `logitech/openlogi-settings.toml`, open OpenLogi, connect each mouse and keyboard so OpenLogi sees it, then:
+
+```bash
+./logitech/restore.sh
+```
+
+OpenLogi files each device's settings (button actions, per-app overrides, DPI, and so on) under its serial number. This repo is public, so the backup files them under the model name instead, such as "MX Master 3S", and the restore applies them to every device of that model that OpenLogi has seen on this Mac.
+
+- **It asks first.** There's one question for the general settings and one for each device. Each shows the device on this Mac and the saved model, the settings that would change with both values, and the settings that are already the same. Yes replaces all of that device's settings with the saved ones. Nothing is asked where nothing would change.
+- **The old file is kept** beside the new one as `config.toml.bak.<timestamp>`. Comments in it aren't carried over.
+- **OpenLogi is quit and reopened** afterward, which is what makes it load the file. Pass `--no-relaunch` to do that yourself.
+- **What isn't saved:** which receiver or cable a device connects through and any setting made for one connection only, a keyboard's list of mice that follow its host switch, and Flow pairings. Set those up again on the new Mac.
+- **OpenLogi versions:** the backup records the config format it was saved in. If this Mac's OpenLogi uses a different one, the restore says so and asks before going on.
+
+Both scripts need Python 3.11 or later and install it with Homebrew if it's missing.
+
 ## Updating
 
 To change the git shortcuts, edit `git/aliases.zsh`, then install the new copy:
@@ -124,6 +140,12 @@ After changing `~/.tmux.conf`, copy it back into the repo:
 
 ```bash
 ./tmux/backup_tmux.sh
+```
+
+After changing settings in OpenLogi, save them into the repo. If two devices of one model have different settings, it asks which to save. Read the diff before committing, since device names and actions that open files or type text are saved as they are:
+
+```bash
+./logitech/backup.sh
 ```
 
 After changing `tmux/restore-sessions.sh`, install the new copy. tmux, the login agent, and the Ghostty hook all run the one in `~/.local/bin`, not the one in the repo:

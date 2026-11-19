@@ -1,0 +1,40 @@
+# OpenLogi settings, saved by logitech/backup.sh. Restore them with
+# logitech/restore.sh. Device settings are filed by model name, not by serial
+# number. Don't edit this by hand; change the settings in OpenLogi and run
+# backup.sh again.
+
+schema_version = 11
+
+[general.app_settings]
+animate_desktop_switch = true
+app_icon = "openlogi"
+appearance = "system"
+asset_source = "automatic"
+auto_download_assets = true
+auto_install_updates = false
+capture_mouse_events = true
+check_for_updates = true
+device_view_mode = "grid"
+launch_at_login = true
+lock_key_notifications = true
+low_battery_notifications = true
+mouse_profile_target = "pointer"
+show_in_menu_bar = true
+smooth_scroll = false
+thumbwheel_sensitivity = 14
+ui_scale = "normal"
+update_prompt_seen = true
+vertical_scroll_sensitivity = 14
+
+[general.app_settings.momentum_scrolling]
+enabled = false
+glide_ms = 400
+glide_shape = "smooth"
+max_glide_speed = 8000
+pixels_per_notch = 28
+repeat_boost = 135
+
+[models."MX Master 3S"]
+kind = "mouse"
+
+[models."MX Master 3S".settings]
